@@ -5,42 +5,50 @@ const prisma = new PrismaClient();
 
 router.get('/list', async (req, res) => {
     try {
-        const items = await prisma.product.findMany();
-        res.json({ 
+        const products = await prisma.product.findMany();
+        res.json({
             status: "success",
-            items,
-            count: items.length 
+            products
         });
     } catch (error) {
-        console.error('Error fetching products:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             status: "error",
-            message: "Database error occurred" 
+            message: "Database error occurred"
         });
     }
 });
 
 router.get('/item/:id', async (req, res) => {
-    const itemId = req.params.id;
-    try {
-        const item = await prisma.product.findUnique({
-            where: { id: Number(itemId) }  
+    const productId = req.params.id;
+
+    if (isNaN(productId) || !Number.isInteger(Number(productId))) {
+        return res.status(400).json({
+            status: "error",
+            message: "Invalid product ID, must be an integer"
         });
-        if (!item) {
-            return res.status(404).json({ 
+    }
+
+    try {
+        const product = await prisma.product.findUnique({
+            where: { id: Number(productId) }
+        });
+
+        if (!product) {
+            return res.status(404).json({
                 status: "error",
-                message: "Item not available" 
+                message: "Product not found"
             });
         }
-        res.json({ 
+
+        res.json({
             status: "success",
-            item 
+            product
         });
     } catch (error) {
         console.error('Error fetching product:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             status: "error",
-            message: "Failed to retrieve item" 
+            message: "Failed to retrieve product"
         });
     }
 });

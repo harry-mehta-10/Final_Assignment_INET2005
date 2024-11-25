@@ -1,21 +1,30 @@
 const express = require('express');
+const session = require('express-session');
 const cors = require('cors');
-require('dotenv').config();
-
+const usersRouter = require('./routes/users');
+const productsRouter = require('./routes/products');
+const purchaseRouter = require('./routes/purchase');
 const app = express();
-const PORT = process.env.PORT || 5000;
+const port = process.env.PORT || 5000;
 
-const usersRoute = require('./routes/users');
-const productsRoute = require('./routes/products');
+app.use(cors({
+    credentials: true,
+    origin: 'http://localhost:3000'
+}));
 
-app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use('/public', express.static('public'));
 
-app.use('/users', usersRoute);
-app.use('/products', productsRoute);
+app.use(session({
+    secret: 'your-secret-key',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false }
+}));
 
-app.get('/', (req, res) => res.send('SortedStore API is running'));
+app.use('/users', usersRouter);
+app.use('/products', productsRouter);
+app.use('/purchase', purchaseRouter);
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+});
