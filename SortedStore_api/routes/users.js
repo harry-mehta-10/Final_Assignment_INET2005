@@ -6,11 +6,10 @@ const prisma = new PrismaClient();
 
 router.post('/register', async (req, res) => {
     const { email, password, first_name, last_name } = req.body;
-
     if (!email?.trim() || !password?.trim() || !first_name?.trim() || !last_name?.trim()) {
-        return res.status(400).json({ 
+        return res.status(400).json({
             status: "error",
-            message: "Missing required fields" 
+            message: "Missing required fields"
         });
     }
 
@@ -20,9 +19,9 @@ router.post('/register', async (req, res) => {
         });
 
         if (existingUser) {
-            return res.status(409).json({ 
+            return res.status(409).json({
                 status: "error",
-                message: "Account already exists" 
+                message: "Account already exists"
             });
         }
 
@@ -38,27 +37,25 @@ router.post('/register', async (req, res) => {
             }
         });
 
-        res.status(201).json({ 
+        res.status(201).json({
             status: "success",
             message: "Account created successfully",
-            userId: newUser.id 
+            userId: newUser.id
         });
     } catch (error) {
-        console.error('Error during registration:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             status: "error",
-            message: "Registration failed" 
+            message: "Registration failed"
         });
     }
 });
 
 router.post('/authenticate', async (req, res) => {
     const { email, password } = req.body;
-
     if (!email || !password) {
-        return res.status(400).json({ 
+        return res.status(400).json({
             status: "error",
-            message: "Email and password are required" 
+            message: "Email and password are required"
         });
     }
 
@@ -68,21 +65,29 @@ router.post('/authenticate', async (req, res) => {
         });
 
         if (!user) {
-            return res.status(401).json({ 
+            return res.status(401).json({
                 status: "error",
-                message: "Authentication failed" 
+                message: "Authentication failed"
             });
         }
 
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) {
-            return res.status(401).json({ 
+            return res.status(401).json({
                 status: "error",
-                message: "Authentication failed" 
+                message: "Authentication failed"
             });
         }
 
-        res.json({ 
+        // Store session data
+        req.session.user = {
+            customer_id: user.id,
+            email: user.email,
+            first_name: user.first_name,
+            last_name: user.last_name
+        };
+
+        res.json({
             status: "success",
             message: "Authentication successful",
             user: {
@@ -91,10 +96,41 @@ router.post('/authenticate', async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Error during authentication:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             status: "error",
-            message: "Server error" 
+            message: "Server error"
+        });
+    }
+});
+
+router.post('/logout', (req, res) => {
+    // Destroy the session to log out the user
+    req.session.destroy((err) => {
+        if (err) {
+            return res.status(500).json({
+                status: "error",
+                message: "Failed to log out"
+            });
+        }
+
+        res.json({
+            status: "success",
+            message: "Logged out successfully"
+        });
+    });
+});
+
+router.get('/getSession', (req, res) => {
+    // Check if user is logged in (if session exists)
+    if (req.session.user) {
+        res.json({
+            status: "success",
+            user: req.session.user
+        });
+    } else {
+        res.status(401).json({
+            status: "error",
+            message: "Not logged in"
         });
     }
 });
